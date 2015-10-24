@@ -1,0 +1,42 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "[pxl] digital",
+    "longName": "Missing in Orbit",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/screenshot.png",
+                "menuIcon": true,
+                "name": "IMAGE_SCREENSHOT",
+                "type": "png"
+            },
+            {
+                "characterRegex": "[0-9:]",
+                "file": "fonts/Dosis-SemiBold.ttf",
+                "name": "FONT_DOSIS_SEMIBOLD_30",
+                "type": "font"
+            },
+            {
+                "characterRegex": "[0-9:]",
+                "file": "fonts/Dosis-SemiBold.ttf",
+                "name": "FONT_DOSIS_SEMIBOLD_40",
+                "type": "font"
+            }
+        ]
+    },
+    "sdkVersion": "3",
+    "shortName": "Missing in Orbit",
+    "targetPlatforms": [
+        "basalt",
+        "chalk"
+    ],
+    "uuid": "624a3627-0640-4fe9-9f8a-963f97faa423",
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": true
+    }
+}

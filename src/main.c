@@ -25,7 +25,7 @@ static float SECONDS_TRACK_RADIUS, SECONDS_TRACK_STROKE, SECONDS_HAND_RADIUS;
 /************************************ functions **************************************/ 
 
 static void get_angles_60(int time, int delta, int* start, int* end) {
-  
+  /*
     *start = -(360-delta) + time*6; // 6 = 360/60
     *end = (360-delta) + time*6;
   
@@ -37,18 +37,23 @@ static void get_angles_60(int time, int delta, int* start, int* end) {
     if(time == 1) {
         *start = 18;
         *end = 716;
-      } 
+      } */
+	
+	*start = time*6 + delta;
+	*end = *start + 360 - 2*delta;
 } 
 
 static void get_angles_12(int time, int delta, int* start, int* end){
-    
+    /*
     *start = -(360-delta) +time*30; // 30 = 360/12
     *end = (360-delta)+time*30;
     
     if(time == 0) {
         *start = -(360-delta) +12*30; // 30 = 360/12
         *end = (360-delta)+12*30;
-    }
+    } */
+	*start = time*30 + delta;
+	*end = *start + 360 - 2*delta;
 }
 /************************************ UI **************************************/
 
@@ -181,7 +186,7 @@ static void update_proc(Layer *layer, GContext *ctx) {
     
 get_angles_12(mode_time.hours, hours_delta, &hours_start_angle, &hours_end_angle);
   
-  //APP_LOG(APP_LOG_LEVEL_DEBUG, "seconds: %d, start: %d, end: %d",  mode_time.seconds, seconds_start_angle, seconds_end_angle);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "seconds: %d, start: %d, end: %d",  mode_time.seconds, seconds_start_angle, seconds_end_angle);
   
    //set colour for arcs and "hands"
     graphics_context_set_fill_color(ctx, GColorWhite );
@@ -204,6 +209,9 @@ get_angles_12(mode_time.hours, hours_delta, &hours_start_angle, &hours_end_angle
   //draw second hand
   graphics_context_set_fill_color(ctx, GColorRed );
   graphics_fill_circle(ctx, second_hand, SECONDS_HAND_RADIUS);
+	
+	//graphics_context_set_fill_color(ctx, GColorYellow);
+  //graphics_fill_radial(ctx, hours_rect, GOvalScaleModeFitCircle, 30, DEG_TO_TRIGANGLE(135), DEG_TO_TRIGANGLE(405));
 	
 	update_time();
 }

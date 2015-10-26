@@ -1,6 +1,8 @@
 #include <pebble.h>
 
 #define ANTIALIASING true
+#define SWEEP_HOURS false
+#define SWEEP_MINUTES false
 
 typedef struct {
   int hours;
@@ -11,7 +13,6 @@ typedef struct {
 static Window *s_main_window;
 static Layer *s_canvas_layer;
 static TextLayer *s_time_layer;
-//static TextLayer *s_seconds_layer;
 
 static GPoint s_center;
 static GRect window_bounds;
@@ -24,35 +25,19 @@ static float SECONDS_TRACK_RADIUS, SECONDS_TRACK_STROKE, SECONDS_HAND_RADIUS;
 
 /************************************ functions **************************************/ 
 
-static void get_angles_60(int time, int delta, int* start, int* end) {
-  /*
-    *start = -(360-delta) + time*6; // 6 = 360/60
-    *end = (360-delta) + time*6;
-  
-    if(time == 0) {
-        *start = -(360-delta) + 60*6;
-        *end = (360-delta) + 60*6;
-      }
+float myround(float f) {
+  if (f >= 0x1.0p23) return f;
+  if (f <= 0.5) return 0;
+  return (float) (unsigned int) (f + 0.5f);
+}
 
-    if(time == 1) {
-        *start = 18;
-        *end = 716;
-      } */
-	
-	*start = time*6 + delta;
+static void get_angles_60(int time, int time_fraction, int delta, int* start, int* end) {
+	*start = myround((time + (float)time_fraction/60) * 6 + delta);
 	*end = *start + 360 - 2*delta;
 } 
 
-static void get_angles_12(int time, int delta, int* start, int* end){
-    /*
-    *start = -(360-delta) +time*30; // 30 = 360/12
-    *end = (360-delta)+time*30;
-    
-    if(time == 0) {
-        *start = -(360-delta) +12*30; // 30 = 360/12
-        *end = (360-delta)+12*30;
-    } */
-	*start = time*30 + delta;
+static void get_angles_12(int hour, int minute, int delta, int* start, int* end) {
+	*start = myround((hour + (float)(minute)/60) * 30 + delta);
 	*end = *start + 360 - 2*delta;
 }
 /************************************ UI **************************************/
@@ -64,8 +49,6 @@ static void update_time() {
 
   // Create a long-lived buffer
   static char buffer[] = "00:00";
-  
-  //static char seconds_buffer[] = "00";
 
   // Write the current hours and minutes into the buffer
   if(clock_is_24h_style() == true) {
@@ -75,12 +58,9 @@ static void update_time() {
     // Use 12 hour format
     strftime(buffer, sizeof("00:00"), "%I:%M", tick_time);
   }
-  
-//  strftime(seconds_buffer, sizeof("00"), "%S", tick_time);
 
   // Display this time on the TextLayer
   text_layer_set_text(s_time_layer, buffer);
-  //text_layer_set_text(s_seconds_layer, seconds_buffer);
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits changed) {
@@ -132,24 +112,26 @@ static void update_proc(Layer *layer, GContext *ctx) {
   
   // generate position of hands
   
-    GPoint second_hand = (GPoint) {
+  GPoint second_hand = (GPoint) {
     .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * mode_time.seconds / 60) * (int32_t)(SECONDS_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.x,
     .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * mode_time.seconds / 60) * (int32_t)(SECONDS_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.y,
   };
-  
+	
+ float minutes = mode_time.minutes + (float)mode_time.seconds / 60;
+	
   GPoint minute_hand = (GPoint) {
-    .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * mode_time.minutes / 60) * (int32_t)(MINUTES_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.x,
-    .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * mode_time.minutes / 60) * (int32_t)(MINUTES_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.y,
-  };
-  
-  GPoint hour_hand = (GPoint) {
-    .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * mode_time.hours/ 12) * (int32_t)(HOURS_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.x,
-    .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * mode_time.hours / 12) * (int32_t)(HOURS_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.y,
+    .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * minutes / 60) * (int32_t)(MINUTES_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.x,
+    .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * minutes/ 60) * (int32_t)(MINUTES_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.y,
   };
 	
-	graphics_context_set_fill_color(ctx, GColorWhite);
-  
-  //GRect rect = GRect(second_hand.x - SECONDS_HAND_RADIUS*2, second_hand.y - SECONDS_HAND_RADIUS*2, SECONDS_HAND_RADIUS*4, SECONDS_HAND_RADIUS*4);
+  float hours = mode_time.hours + (float)mode_time.minutes / 60;
+
+  GPoint hour_hand = (GPoint) {
+    .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * hours / 12) * (int32_t)(HOURS_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.x,
+    .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * hours / 12) * (int32_t)(HOURS_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.y,
+  };
+	
+  graphics_context_set_fill_color(ctx, GColorWhite);
   
   GRect seconds_rect = GRect(s_center.x - SECONDS_TRACK_RADIUS, s_center.y - SECONDS_TRACK_RADIUS, SECONDS_TRACK_RADIUS * 2, SECONDS_TRACK_RADIUS * 2);
   
@@ -161,32 +143,28 @@ static void update_proc(Layer *layer, GContext *ctx) {
     
   int seconds_start_angle, seconds_end_angle;
   
-  int seconds_delta = 12; 
-    
-  get_angles_60(mode_time.seconds, seconds_delta, &seconds_start_angle, &seconds_end_angle);
+  int seconds_delta = 12;
+  int minutes_delta = 12;
+  int hours_delta = 12;
+	
+  get_angles_60(mode_time.seconds, 0, seconds_delta, &seconds_start_angle, &seconds_end_angle);
   
   //----------------------------------
   
   //int minutes_angle = mode_time.minutes * 360 / 60;
   int minutes_start_angle, minutes_end_angle;
-  
-  int minutes_delta = 12; 
     
-  get_angles_60(mode_time.minutes, minutes_delta, &minutes_start_angle, &minutes_end_angle);
+  get_angles_60(mode_time.minutes, (SWEEP_MINUTES == true) ? mode_time.seconds : 0, minutes_delta, &minutes_start_angle, &minutes_end_angle);
+  //get_angles_60(mode_time.minutes, mode_time.seconds, minutes_delta, &minutes_start_angle, &minutes_end_angle);
   
   //----------------------------------
   
   //int hours_angle = mode_time.hours * 360 / 12;
   int hours_start_angle, hours_end_angle;
+
+  get_angles_12(mode_time.hours,(SWEEP_HOURS == true) ? mode_time.minutes : 0, hours_delta, &hours_start_angle, &hours_end_angle);
   
-  int hours_delta = 12; 
-  
-  hours_start_angle = -(360-hours_delta) +mode_time.hours*30;
-  hours_end_angle = (360-hours_delta)+mode_time.hours*30;
-    
-get_angles_12(mode_time.hours, hours_delta, &hours_start_angle, &hours_end_angle);
-  
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "seconds: %d, start: %d, end: %d",  mode_time.seconds, seconds_start_angle, seconds_end_angle);
+  //APP_LOG(APP_LOG_LEVEL_DEBUG, "seconds: %d, start: %d, end: %d",  mode_time.seconds, seconds_start_angle, seconds_end_angle);
   
    //set colour for arcs and "hands"
     graphics_context_set_fill_color(ctx, GColorWhite );
@@ -210,9 +188,6 @@ get_angles_12(mode_time.hours, hours_delta, &hours_start_angle, &hours_end_angle
   graphics_context_set_fill_color(ctx, GColorRed );
   graphics_fill_circle(ctx, second_hand, SECONDS_HAND_RADIUS);
 	
-	//graphics_context_set_fill_color(ctx, GColorYellow);
-  //graphics_fill_radial(ctx, hours_rect, GOvalScaleModeFitCircle, 30, DEG_TO_TRIGANGLE(135), DEG_TO_TRIGANGLE(405));
-	
 	update_time();
 }
 
@@ -223,7 +198,6 @@ static void window_load(Window *window) {
   
   //APP_LOG(APP_LOG_LEVEL_DEBUG, "bounds: %d %d %d %d", window_bounds.origin.x, window_bounds.origin.y, window_bounds.size.h, window_bounds.size.w );
 
-
   s_center = grect_center_point(&window_bounds);
   
   s_canvas_layer = layer_create(window_bounds);
@@ -231,8 +205,6 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, s_canvas_layer);
 	
 // Create time TextLayer
-  //s_time_layer = text_layer_create(GRect(0, 76, 144, 50));
-  //s_time_layer = text_layer_create(GRect(0, 71, 144, 50));
   
   int font_height;
   
@@ -249,14 +221,8 @@ static void window_load(Window *window) {
 text_layer_set_font(s_time_layer, s_custom_font);
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
   
-  //s_seconds_layer = text_layer_create(GRect(0,0,50,50));
-  //text_layer_set_background_color(s_seconds_layer, GColorClear);
-  //text_layer_set_text_color(s_seconds_layer, GColorWhite);
-  //text_layer_set_text(s_seconds_layer, "00");
-
   // Add it as a child layer to the Window's root layer
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_time_layer));
-  //layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_seconds_layer));
 	
 	// Make sure the time is displayed from the start
   update_time();
@@ -266,7 +232,6 @@ static void window_unload(Window *window) {
   layer_destroy(s_canvas_layer);
   // Destroy TextLayer
   text_layer_destroy(s_time_layer);
-  //text_layer_destroy(s_seconds_layer);
   fonts_unload_custom_font(s_custom_font);
 }
 

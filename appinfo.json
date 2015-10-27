@@ -15,15 +15,21 @@
                 "type": "png"
             },
             {
-                "characterRegex": "[0-9:]",
+                "characterRegex": "[a-zA-Z0-9]",
                 "file": "fonts/Dosis-SemiBold.ttf",
-                "name": "FONT_DOSIS_SEMIBOLD_30",
+                "name": "FONT_DOSIS_SEMIBOLD_18",
                 "type": "font"
             },
             {
                 "characterRegex": "[0-9:]",
                 "file": "fonts/Dosis-SemiBold.ttf",
                 "name": "FONT_DOSIS_SEMIBOLD_40",
+                "type": "font"
+            },
+            {
+                "characterRegex": "[0-9:]",
+                "file": "fonts/Dosis-SemiBold.ttf",
+                "name": "FONT_DOSIS_SEMIBOLD_30",
                 "type": "font"
             }
         ]

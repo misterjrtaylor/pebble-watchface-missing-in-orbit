@@ -13,6 +13,8 @@ typedef struct {
 static Window *s_main_window;
 static Layer *s_canvas_layer;
 static TextLayer *s_time_layer;
+static TextLayer *s_day_layer;
+static TextLayer *s_month_layer;
 
 static GPoint s_center;
 static GRect window_bounds;
@@ -49,6 +51,8 @@ static void update_time() {
 
   // Create a long-lived buffer
   static char buffer[] = "00:00";
+  static char month_buffer[] = "XXX";
+  static char day_buffer[] ="00";
 
   // Write the current hours and minutes into the buffer
   if(clock_is_24h_style() == true) {
@@ -58,9 +62,15 @@ static void update_time() {
     // Use 12 hour format
     strftime(buffer, sizeof("00:00"), "%I:%M", tick_time);
   }
-
+	
+  strftime(month_buffer, sizeof(month_buffer), "%b", tick_time);
+  
+	strftime(day_buffer, sizeof("00"), "%d", tick_time);
+	
   // Display this time on the TextLayer
   text_layer_set_text(s_time_layer, buffer);
+   text_layer_set_text(s_day_layer, day_buffer);
+  text_layer_set_text(s_month_layer, month_buffer);
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits changed) {
@@ -117,14 +127,24 @@ static void update_proc(Layer *layer, GContext *ctx) {
     .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * mode_time.seconds / 60) * (int32_t)(SECONDS_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.y,
   };
 	
- float minutes = mode_time.minutes + (float)mode_time.seconds / 60;
+  float minutes, hours;	
+	
+  if (SWEEP_MINUTES == true) {
+	minutes = mode_time.minutes + (float)mode_time.seconds / 60;
+  } else {
+	minutes = mode_time.minutes;
+  }
 	
   GPoint minute_hand = (GPoint) {
     .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * minutes / 60) * (int32_t)(MINUTES_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.x,
     .y = (int16_t)(-cos_lookup(TRIG_MAX_ANGLE * minutes/ 60) * (int32_t)(MINUTES_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.y,
   };
-	
-  float hours = mode_time.hours + (float)mode_time.minutes / 60;
+
+  if( SWEEP_HOURS == true) {
+    hours = mode_time.hours + (float)mode_time.minutes / 60;
+  } else {
+	hours = mode_time.hours; 
+  }
 
   GPoint hour_hand = (GPoint) {
     .x = (int16_t)(sin_lookup(TRIG_MAX_ANGLE * hours / 12) * (int32_t)(HOURS_TRACK_RADIUS) / TRIG_MAX_RATIO) + s_center.x,
@@ -211,19 +231,37 @@ static void window_load(Window *window) {
   PBL_IF_ROUND_ELSE(font_height = 45, font_height = 36); //fudge factor to get text vertically centred
   
   s_time_layer = text_layer_create(GRect(window_bounds.origin.x, (window_bounds.size.h-font_height)/2, window_bounds.size.w, font_height));
+	
+  s_day_layer = text_layer_create(GRect(0,50,window_bounds.size.w,18)); //need to calculate proper y-location
+  s_month_layer = text_layer_create(GRect(0,100,window_bounds.size.w,18)); //need to calculate proper y-location
+  
+  text_layer_set_background_color(s_day_layer, GColorClear);
+  text_layer_set_text_color(s_day_layer, GColorWhite);
+  text_layer_set_text(s_day_layer, "00");
   
   text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_text_color(s_time_layer, GColorWhite);
   text_layer_set_text(s_time_layer, "00:00");
+	
+  text_layer_set_background_color(s_month_layer, GColorClear);
+  text_layer_set_text_color(s_month_layer, GColorWhite);
+  text_layer_set_text(s_month_layer, "XXX");
   
   PBL_IF_ROUND_ELSE(s_custom_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DOSIS_SEMIBOLD_40)), s_custom_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DOSIS_SEMIBOLD_30)));
 
-text_layer_set_font(s_time_layer, s_custom_font);
+  text_layer_set_font(s_time_layer, s_custom_font);
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
+	
+  text_layer_set_font(s_day_layer, fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DOSIS_SEMIBOLD_18)));
+  text_layer_set_text_alignment(s_day_layer, GTextAlignmentCenter);
+
+  text_layer_set_font(s_month_layer, fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DOSIS_SEMIBOLD_18)));
+  text_layer_set_text_alignment(s_month_layer, GTextAlignmentCenter);
   
   // Add it as a child layer to the Window's root layer
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_time_layer));
-	
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_day_layer));
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_month_layer));
 	// Make sure the time is displayed from the start
   update_time();
 }
@@ -232,6 +270,8 @@ static void window_unload(Window *window) {
   layer_destroy(s_canvas_layer);
   // Destroy TextLayer
   text_layer_destroy(s_time_layer);
+  text_layer_destroy(s_day_layer);
+  text_layer_destroy(s_month_layer);
   fonts_unload_custom_font(s_custom_font);
 }
 

@@ -232,11 +232,13 @@ static void window_load(Window *window) {
   
   s_time_layer = text_layer_create(GRect(window_bounds.origin.x, (window_bounds.size.h-font_height)/2, window_bounds.size.w, font_height));
 	
-  s_day_layer = text_layer_create(GRect(0,50,window_bounds.size.w,18)); //need to calculate proper y-location
-  s_month_layer = text_layer_create(GRect(0,100,window_bounds.size.w,18)); //need to calculate proper y-location
+  //s_center.y - MINUTES_TRACK_RADIUS + 18 + 18;
+		
+  s_day_layer = text_layer_create(GRect(0, s_center.y - 18 - 18  , window_bounds.size.w, 18)); //need to calculate proper y-location
+  s_month_layer = text_layer_create(GRect(0, s_center.y +36 , window_bounds.size.w, 18)); //need to calculate proper y-location
   
-  text_layer_set_background_color(s_day_layer, GColorClear);
-  text_layer_set_text_color(s_day_layer, GColorWhite);
+  text_layer_set_background_color(s_day_layer, GColorRed);
+  text_layer_set_text_color(s_day_layer, GColorLightGray  );
   text_layer_set_text(s_day_layer, "00");
   
   text_layer_set_background_color(s_time_layer, GColorClear);
@@ -244,7 +246,7 @@ static void window_load(Window *window) {
   text_layer_set_text(s_time_layer, "00:00");
 	
   text_layer_set_background_color(s_month_layer, GColorClear);
-  text_layer_set_text_color(s_month_layer, GColorWhite);
+  text_layer_set_text_color(s_month_layer, GColorLightGray );
   text_layer_set_text(s_month_layer, "XXX");
   
   PBL_IF_ROUND_ELSE(s_custom_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DOSIS_SEMIBOLD_40)), s_custom_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DOSIS_SEMIBOLD_30)));
